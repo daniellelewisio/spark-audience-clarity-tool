@@ -1,0 +1,702 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Audience Clarity Tool · SPARK</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --ink:#333031; --rose:#c36e6e; --rose-dark:#b05f5f; --blush:#e2b5b0;
+  --cream:#f4f2f0; --paper:#faf7f5; --line:#e7e2d8; --muted:#6b5e5e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  color:var(--ink);background:var(--paper);
+  line-height:1.6;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;
+  padding:0 0 70px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+
+/* intro */
+.tool-head{text-align:center;padding:48px 24px 6px}
+.tool-head .eyebrow{font-size:11px;letter-spacing:0.28em;text-transform:uppercase;font-weight:600;color:var(--rose);margin-bottom:16px}
+.tool-head h1{font-weight:300;font-size:clamp(32px,6vw,48px);line-height:1.08;letter-spacing:-0.02em;color:var(--ink);margin-bottom:16px}
+.tool-head h1 em{font-style:italic;color:var(--rose-dark);font-weight:400}
+.tool-head p{font-size:17px;color:#544c4c;max-width:540px;margin:0 auto}
+
+/* step blocks */
+.step{background:#fff;border:1px solid var(--line);border-radius:4px;padding:36px 34px;margin:28px 0;box-shadow:0 1px 0 rgba(51,48,49,0.02)}
+.step-num{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.step-num .n{font-style:italic;font-size:28px;color:var(--rose);line-height:1;font-weight:300}
+.step-num .lab{font-size:11px;letter-spacing:0.24em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+.step h2{font-weight:300;font-size:clamp(23px,4vw,31px);line-height:1.14;letter-spacing:-0.02em;color:var(--ink);margin-bottom:8px}
+.step .sub{font-size:15px;color:#5a5557;margin-bottom:24px;max-width:520px}
+
+/* quadrant grid */
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.quad{display:flex;flex-direction:column}
+.quad label{font-weight:600;font-size:14px;color:var(--rose-dark);margin-bottom:4px}
+.quad .hint{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px;min-height:34px}
+.quad textarea{font-family:inherit;font-size:14px;color:var(--ink);line-height:1.55;
+  background:var(--paper);border:1px solid var(--line);border-radius:4px;
+  padding:12px 14px;resize:vertical;min-height:96px;transition:border-color .16s,box-shadow .16s}
+.quad textarea:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px rgba(195,110,110,0.12)}
+.quad textarea::placeholder{color:#b8aeae}
+
+/* lock this in */
+.lock .lock-badge{display:inline-block;font-family:'Caveat',cursive;font-size:25px;font-weight:600;color:var(--rose-dark);transform:rotate(-3deg);margin-bottom:6px}
+.sentence{font-size:clamp(20px,3.4vw,26px);line-height:1.85;color:var(--ink);margin:6px 0 26px;font-weight:300}
+.sentence .seg-in{display:inline-block;border:none;border-bottom:2px dashed var(--rose);background:transparent;
+  font-family:inherit;font-size:inherit;color:var(--rose-dark);font-style:italic;font-weight:400;
+  padding:0 8px 1px;min-width:120px;text-align:center;transition:background .16s}
+.sentence .seg-in:focus{outline:none;background:rgba(195,110,110,0.08);border-bottom-color:var(--rose-dark)}
+.sentence .seg-in::placeholder{color:#d6b9b6;font-style:italic}
+.sentence .fixed{color:var(--ink)}
+
+/* live preview of message */
+.msg-live{background:var(--ink);border-radius:4px;padding:26px 28px;color:var(--cream);position:relative;overflow:hidden}
+.msg-live .glow{position:absolute;inset:0;background:radial-gradient(ellipse at 30% -20%,rgba(195,110,110,0.5),transparent 70%);pointer-events:none}
+.msg-live .ml-lab{position:relative;font-size:10px;letter-spacing:0.26em;text-transform:uppercase;color:var(--blush);margin-bottom:10px;font-weight:600}
+.msg-live .ml-text{position:relative;font-style:italic;font-size:20px;line-height:1.55;color:#fff;font-weight:300}
+.msg-live .ml-text .gap{color:var(--blush);opacity:0.55}
+
+/* channels */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.chip{font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink);
+  background:var(--paper);border:1.5px solid var(--line);border-radius:100px;
+  padding:9px 16px;cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--rose)}
+.chip.on{background:var(--rose-dark);border-color:var(--rose-dark);color:#fff}
+.chip.on::before{content:"● ";font-size:9px;vertical-align:middle;color:var(--blush)}
+.chip-add{display:flex;gap:8px;margin-top:16px;align-items:center}
+.chip-add input{flex:1;font-family:inherit;font-size:13.5px;color:var(--ink);
+  background:var(--paper);border:1px solid var(--line);border-radius:100px;padding:9px 16px}
+.chip-add input:focus{outline:none;border-color:var(--rose)}
+.chip-add button{font-family:inherit;font-size:13px;font-weight:600;color:var(--rose-dark);
+  background:transparent;border:1px solid rgba(176,95,95,0.45);border-radius:100px;padding:9px 18px;cursor:pointer;transition:all .15s}
+.chip-add button:hover{background:rgba(176,95,95,0.07)}
+.pick-note{font-family:'Caveat',cursive;font-size:20px;color:var(--muted);margin-top:18px;transform:rotate(-1deg)}
+.pick-note b{color:var(--rose-dark)}
+
+/* the reframe */
+.reframe{margin:22px 0 4px;padding:22px 24px;border-left:3px solid var(--rose);background:rgba(195,110,110,0.05);border-radius:0 4px 4px 0}
+.reframe-count{font-style:italic;font-size:23px;color:var(--rose-dark);line-height:1.1;margin-bottom:10px;font-weight:300}
+.reframe-count span{font-style:normal;font-weight:500}
+.reframe-line{font-size:15px;color:#4a4547;line-height:1.6;margin-bottom:12px}
+.reframe-nudge{font-family:'Caveat',cursive;font-size:22px;color:var(--rose-dark);line-height:1.35;transform:rotate(-0.6deg)}
+
+/* first moves */
+.moves-empty{font-family:'Caveat',cursive;font-size:21px;color:var(--muted);transform:rotate(-1deg);padding:8px 0}
+.move{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:20px 22px;margin-bottom:14px}
+.move .mv-top{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.move .mv-ch{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;color:var(--rose-dark)}
+.move .mv-tag{font-family:'Caveat',cursive;font-size:18px;color:var(--rose);margin-left:auto;transform:rotate(-2deg)}
+.move textarea{width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);line-height:1.55;
+  background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 14px;resize:vertical;min-height:70px;transition:border-color .16s,box-shadow .16s}
+.move textarea:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px rgba(195,110,110,0.12)}
+.move .mv-when{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.move .mv-when .lbl{font-size:13px;color:var(--muted)}
+.move .when-chip{font-size:12.5px;font-weight:500;color:var(--ink);background:#fff;border:1.5px solid var(--line);
+  border-radius:100px;padding:6px 14px;cursor:pointer;transition:all .15s}
+.move .when-chip:hover{border-color:var(--rose)}
+.move .when-chip.on{background:var(--rose-dark);border-color:var(--rose-dark);color:#fff}
+
+/* the artifact card */
+.artifact-wrap{margin:40px 0 0}
+.artifact-lab{text-align:center;font-size:11px;letter-spacing:0.26em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;font-weight:600}
+.card{background:var(--ink);border-radius:4px;padding:48px 44px;color:var(--cream);position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(51,48,49,0.22)}
+.card .c-glow{position:absolute;top:-40%;right:-10%;width:70%;height:90%;background:radial-gradient(ellipse,rgba(195,110,110,0.5),transparent 70%);filter:blur(30px);pointer-events:none}
+.card .c-eyebrow{position:relative;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--blush);margin-bottom:26px;font-weight:600}
+.card .c-msg{position:relative;font-size:clamp(22px,3.6vw,29px);line-height:1.55;color:#fff;margin-bottom:34px;font-weight:300}
+.card .c-msg em{font-style:italic;color:var(--blush)}
+.card .c-rule{position:relative;height:1px;background:rgba(244,242,240,0.16);margin:0 0 28px}
+.card .c-ch-lab{position:relative;font-size:10px;letter-spacing:0.26em;text-transform:uppercase;color:var(--blush);margin-bottom:14px;font-weight:600}
+.card .c-ch{position:relative;display:flex;flex-wrap:wrap;gap:10px}
+.card .c-ch span{font-family:inherit;font-size:14px;font-weight:500;color:var(--cream);
+  border:1px solid rgba(226,181,176,0.4);border-radius:100px;padding:7px 16px}
+.card .c-rule2{margin:28px 0}
+.card .c-mv-lab{position:relative;font-size:10px;letter-spacing:0.26em;text-transform:uppercase;color:var(--blush);margin-bottom:14px;font-weight:600}
+.card .c-mv{position:relative;display:flex;flex-direction:column;gap:14px}
+.card .c-mv .cmv{display:flex;gap:14px;align-items:flex-start}
+.card .c-mv .cmv .cmv-ch{font-family:inherit;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;color:var(--blush);flex-shrink:0;width:96px;padding-top:3px;line-height:1.4}
+.card .c-mv .cmv .cmv-do{font-size:14.5px;line-height:1.55;color:rgba(244,242,240,0.92)}
+.card .c-mv .cmv .cmv-do .cmv-when{color:var(--blush);font-style:italic}
+.card.no-moves .c-rule2, .card.no-moves .c-mv-lab, .card.no-moves .c-mv{display:none}
+.card .c-foot{position:relative;margin-top:34px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(244,242,240,0.5)}
+.card .c-foot b{color:var(--blush);font-weight:600}
+.card.empty .c-msg{color:rgba(244,242,240,0.4);font-style:italic}
+
+/* actions */
+.actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:32px}
+.btn{font-family:inherit;font-size:15px;font-weight:500;border-radius:4px;padding:15px 30px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .16s;border:none}
+.btn-primary{background:var(--rose);color:#fff}
+.btn-primary:hover{background:var(--rose-dark)}
+.btn-ghost{background:transparent;color:var(--rose-dark);border:1px solid rgba(176,95,95,0.45)}
+.btn-ghost:hover{background:rgba(176,95,95,0.07)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--cream);
+  font-size:14px;padding:13px 24px;border-radius:4px;opacity:0;pointer-events:none;transition:all .25s;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.saved-note{text-align:center;font-size:12px;color:var(--muted);margin-top:14px;font-style:italic}
+
+@media(max-width:600px){
+  .step{padding:30px 22px}
+  .quad-grid{grid-template-columns:1fr}
+  .card{padding:38px 28px}
+  .quad .hint{min-height:0}
+}
+</style>
+</head>
+<body>
+
+<div class="tool-head">
+  <div class="eyebrow">SPARK · The Audience Hub</div>
+  <h1>The Audience <em>Clarity</em> Tool</h1>
+  <p>Four answers, one sentence, three channels. By the bottom of the page you'll know exactly who you're talking to and where to find them.</p>
+</div>
+
+<div class="wrap">
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <div class="step-num"><span class="n">i</span><span class="lab">The canvas</span></div>
+    <h2>Picture one person. Not everyone.</h2>
+    <p class="sub">Answer for a single real customer, the one you'd most like more of. Keep it honest, keep it short.</p>
+    <div class="quad-grid">
+      <div class="quad">
+        <label>Who are you speaking to?</label>
+        <div class="hint">What stage are they in? What kind of life or business? What do they care about?</div>
+        <textarea id="q1" placeholder="They're a..."></textarea>
+      </div>
+      <div class="quad">
+        <label>What do they want?</label>
+        <div class="hint">What are they trying to achieve? What does success look like for them right now?</div>
+        <textarea id="q2" placeholder="They want..."></textarea>
+      </div>
+      <div class="quad">
+        <label>What's getting in their way?</label>
+        <div class="hint">What are they struggling with? What feels hard, unclear, or frustrating?</div>
+        <textarea id="q3" placeholder="They're stuck on..."></textarea>
+      </div>
+      <div class="quad">
+        <label>What do they need to hear from you?</label>
+        <div class="hint">What would actually help? What would make them feel seen or understood?</div>
+        <textarea id="q4" placeholder="They need to hear..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step lock">
+    <div class="step-num"><span class="n">ii</span><span class="lab">Lock this in</span></div>
+    <span class="lock-badge">your core message</span>
+    <h2>Now distil it to one sentence.</h2>
+    <p class="sub">This is the line that does your targeting for you. Fill the four blanks. Watch it come together below.</p>
+    <div class="sentence">
+      <span class="fixed">I help</span>
+      <input class="seg-in" id="s1" placeholder="who" autocomplete="off">
+      <span class="fixed">who are struggling with</span>
+      <input class="seg-in" id="s2" placeholder="the struggle" autocomplete="off">
+      <span class="fixed">to</span>
+      <input class="seg-in" id="s3" placeholder="what you do" autocomplete="off">
+      <span class="fixed">so they can</span>
+      <input class="seg-in" id="s4" placeholder="the outcome" autocomplete="off"><span class="fixed">.</span>
+    </div>
+    <div class="msg-live">
+      <div class="glow"></div>
+      <div class="ml-lab">Your core message</div>
+      <div class="ml-text" id="msgLive"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <div class="step-num"><span class="n">iii</span><span class="lab">Where they hang out</span></div>
+    <h2>Pick where you'll actually go find them.</h2>
+    <p class="sub">Tap the places your person already spends time. Don't pick all of them, pick the three you'll test first. If you're not sure, that's your homework: go ask them.</p>
+    <div class="chips" id="chips"></div>
+    <div class="reframe" id="reframe">
+      <div class="reframe-count"><span id="rfTotal">26</span> ways to be found.</div>
+      <div class="reframe-line">Before you decide marketing doesn't work for you: look at that list again. You've probably tried a handful. That's not everything. That's barely started.</div>
+      <div class="reframe-nudge">Pick three you haven't given a real go. Test them properly. Keep what works, scrap what doesn't, come back for three more.</div>
+    </div>
+    <div class="chip-add">
+      <input id="chipNew" placeholder="Add your own channel..." autocomplete="off">
+      <button id="chipAdd">Add</button>
+    </div>
+    <div class="pick-note" id="pickNote">Pick up to <b>3</b> to test this month.</div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step moves">
+    <div class="step-num"><span class="n">iv</span><span class="lab">Your first moves</span></div>
+    <h2>Clarity is lovely. Now do something with it.</h2>
+    <p class="sub">One concrete move for each channel you picked, built from your own message. Not a plan. The first actual thing. Tweak any of them so it sounds like you, then put a date on it.</p>
+    <div id="movesWrap">
+      <div class="moves-empty" id="movesEmpty">Pick your channels above and your first moves appear here.</div>
+    </div>
+  </div>
+
+  <!-- ARTIFACT -->
+  <div class="artifact-wrap">
+    <div class="artifact-lab">Your one-pager</div>
+    <div class="card empty" id="card">
+      <div class="c-glow"></div>
+      <div class="c-eyebrow">My Audience, Clarified</div>
+      <div class="c-msg" id="cardMsg">Your core message will appear here as you fill in the sentence above.</div>
+      <div class="c-rule"></div>
+      <div class="c-ch-lab">Where I'm showing up</div>
+      <div class="c-ch" id="cardCh"><span style="border-color:rgba(226,181,176,0.2);color:rgba(244,242,240,0.4)">pick your channels</span></div>
+      <div class="c-rule c-rule2" id="cardRule2"></div>
+      <div class="c-mv-lab" id="cardMvLab">My first moves</div>
+      <div class="c-mv" id="cardMv"></div>
+      <div class="c-foot">SPARK · <b>The Audience Hub</b></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="dlPdf">Download my one-pager (PDF) →</button>
+      <button class="btn btn-ghost" id="copyMsg">Copy my core message</button>
+    </div>
+    <div class="saved-note" id="savedNote"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE = 'spark_audience_clarity_v1';
+  var CHANNELS = [
+    "Referrals","Direct outreach","Email list","Collaborations","Friends & family",
+    "Instagram","TikTok","Facebook","LinkedIn","Online communities","Reddit","Substack","YouTube",
+    "Podcast guesting","Webinars","In-person groups","Networking events","Markets",
+    "Conferences","Seminars","Industry publications","Directories","Established retailers",
+    "Google","Traditional media","Ads"
+  ];
+  var RETIRED = ["Social media"];
+
+  var els = {
+    q:[g('q1'),g('q2'),g('q3'),g('q4')],
+    s:[g('s1'),g('s2'),g('s3'),g('s4')],
+    msgLive:g('msgLive'), cardMsg:g('cardMsg'), cardCh:g('cardCh'),
+    chips:g('chips'), chipNew:g('chipNew'), chipAdd:g('chipAdd'), pickNote:g('pickNote'),
+    movesWrap:g('movesWrap'), movesEmpty:g('movesEmpty'), rfTotal:g('rfTotal'),
+    card:g('card'), cardRule2:g('cardRule2'), cardMvLab:g('cardMvLab'), cardMv:g('cardMv'),
+    dlPdf:g('dlPdf'), copyMsg:g('copyMsg'), toast:g('toast'), savedNote:g('savedNote')
+  };
+  function g(id){return document.getElementById(id);}
+
+  var state = { q:["","","",""], s:["","","",""], channels:[], customChannels:[], picked:[], moves:{} };
+
+  /* ---------- load saved ---------- */
+  try{
+    var raw = localStorage.getItem(STORE);
+    if(raw){
+      var saved = JSON.parse(raw);
+      if(saved && typeof saved==='object'){
+        state.q = saved.q || state.q;
+        state.s = saved.s || state.s;
+        state.picked = saved.picked || [];
+        if(saved.moves && typeof saved.moves==='object') state.moves = saved.moves;
+        var fromSave = [];
+        if(saved.customChannels && saved.customChannels.length) fromSave = fromSave.concat(saved.customChannels);
+        if(saved.channels && saved.channels.length) fromSave = fromSave.concat(saved.channels);
+        fromSave.forEach(function(c){
+          if(CHANNELS.indexOf(c)===-1 && RETIRED.indexOf(c)===-1 && state.customChannels.indexOf(c)===-1) state.customChannels.push(c);
+        });
+        state.picked = state.picked.filter(function(p){ return RETIRED.indexOf(p)===-1; });
+      }
+    }
+  }catch(e){}
+
+  state.channels = CHANNELS.slice();
+  state.customChannels.forEach(function(c){ if(state.channels.indexOf(c)===-1) state.channels.push(c); });
+  state.picked.forEach(function(p){ if(state.channels.indexOf(p)===-1) state.channels.push(p); });
+
+  /* ---------- hydrate inputs ---------- */
+  els.q.forEach(function(t,i){ t.value = state.q[i]||""; t.addEventListener('input',function(){ state.q[i]=t.value; save(); }); });
+  els.s.forEach(function(inp,i){
+    inp.value = state.s[i]||"";
+    inp.addEventListener('input',function(){ state.s[i]=inp.value; renderMessage(); save(); sizeInput(inp); });
+    sizeInput(inp);
+  });
+
+  function sizeInput(inp){
+    var len = (inp.value.length || inp.placeholder.length);
+    inp.style.width = Math.max(120, len*11+24) + 'px';
+  }
+
+  /* ---------- core message ---------- */
+  function buildMessage(forCard){
+    var v = state.s.map(function(x){return (x||"").trim();});
+    var gap = forCard ? '...' : '<span class="gap">...</span>';
+    var p1 = v[0]||gap, p2 = v[1]||gap, p3 = v[2]||gap, p4 = v[3]||gap;
+    return 'I help '+p1+' who are struggling with '+p2+' to '+p3+' so they can '+p4+'.';
+  }
+  function messagePlain(){
+    var v = state.s.map(function(x){return (x||"").trim();});
+    return 'I help '+(v[0]||'___')+' who are struggling with '+(v[1]||'___')+' to '+(v[2]||'___')+' so they can '+(v[3]||'___')+'.';
+  }
+  function allFilled(){ return state.s.every(function(x){return (x||"").trim().length>0;}); }
+
+  function renderMessage(){
+    els.msgLive.innerHTML = buildMessage(false);
+    if(allFilled()){
+      els.card.classList.remove('empty');
+      els.cardMsg.innerHTML = buildMessage(true);
+    } else {
+      els.card.classList.add('empty');
+      els.cardMsg.textContent = 'Your core message will appear here as you fill in the sentence above.';
+    }
+    if(typeof renderMoves==='function' && state.picked.length) renderMoves();
+  }
+
+  /* ---------- channels ---------- */
+  function renderChips(){
+    els.chips.innerHTML = '';
+    state.channels.forEach(function(name){
+      var c = document.createElement('div');
+      c.className = 'chip' + (state.picked.indexOf(name)>-1 ? ' on':'');
+      c.textContent = name;
+      c.addEventListener('click', function(){ toggleChannel(name); });
+      els.chips.appendChild(c);
+    });
+    renderCardChannels();
+    updatePickNote();
+    if(els.rfTotal) els.rfTotal.textContent = state.channels.length;
+  }
+  function toggleChannel(name){
+    var i = state.picked.indexOf(name);
+    if(i>-1){ state.picked.splice(i,1); }
+    else { if(state.picked.length>=3){ flash('Three is the focus, deselect one first.'); return; } state.picked.push(name); ensureMove(name); }
+    save(); renderChips(); renderMoves();
+  }
+  function renderCardChannels(){
+    if(state.picked.length){
+      els.cardCh.innerHTML = '';
+      state.picked.forEach(function(p){ var s=document.createElement('span'); s.textContent=p; els.cardCh.appendChild(s); });
+    } else {
+      els.cardCh.innerHTML = '<span style="border-color:rgba(226,181,176,0.2);color:rgba(244,242,240,0.4)">pick your channels</span>';
+    }
+  }
+  function updatePickNote(){
+    var n = state.picked.length;
+    if(n===0) els.pickNote.innerHTML = 'Pick up to <b>3</b> to test this month.';
+    else if(n<3) els.pickNote.innerHTML = '<b>'+n+'</b> chosen. Room for '+(3-n)+' more.';
+    else els.pickNote.innerHTML = 'Locked in. <b>3 channels</b> to test this month.';
+  }
+  els.chipAdd.addEventListener('click', addCustom);
+  els.chipNew.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); addCustom(); } });
+  function addCustom(){
+    var v = els.chipNew.value.trim();
+    if(!v) return;
+    if(RETIRED.indexOf(v)!==-1){ flash('That one has been split into Instagram, TikTok and Facebook, pick those instead.'); els.chipNew.value=''; return; }
+    if(state.channels.indexOf(v)===-1) state.channels.push(v);
+    if(CHANNELS.indexOf(v)===-1 && state.customChannels.indexOf(v)===-1) state.customChannels.push(v);
+    els.chipNew.value=''; save(); renderChips();
+  }
+
+  /* ---------- first moves engine ---------- */
+  var WHEN_OPTS = ['Today','This weekend','Monday'];
+
+  function frag(i, fallback){ var v=(state.s[i]||'').trim(); return v || fallback; }
+  function who(){ return frag(0,'the people you serve'); }
+  function struggle(){ return frag(1,'what they are stuck on'); }
+
+  function moveTemplate(name){
+    var w = who(), st = struggle();
+    var T = {
+      "Referrals":"Message 3 past clients who fit "+w+". Thank them, then ask who else they know wrestling with "+st+".",
+      "Direct outreach":"Make a list of 5 people who fit "+w+". Send one a short honest message about "+st+" today. No pitch, just a door.",
+      "Email list":"Write one email to your list that names "+st+" out loud and ends with how you help. Send it. Do not wait for the perfect moment.",
+      "Collaborations":"Name one person who already has the trust of "+w+". Message them about one thing you could do together this month.",
+      "Friends & family":"Tell 3 people in your circle exactly who you help and the "+st+" you solve, so they can spot "+w+" for you.",
+      "Instagram":"Post one thing that names "+st+", the thing "+w+" actually feel. Talk to camera if you can, that is what makes them trust you. Post it, do not overthink it.",
+      "TikTok":"Only if "+w+" are actually here. Record one short video answering a question they ask about "+st+". If your person is not on TikTok, skip it and spend the time where they are.",
+      "Facebook":"Find the Facebook group where "+w+" already gather and answer one question about "+st+" properly. Groups still work here, the feed mostly does not.",
+      "LinkedIn":"Post one thing "+w+" would screenshot about "+st+". Then comment properly on 3 posts from people who serve them too.",
+      "Online communities":"Find one group where "+w+" already gather. Answer one question about "+st+" properly, no pitch. Just be useful where they can see it.",
+      "Reddit":"Find the subreddit where "+w+" vent about "+st+". Read for an hour, then answer one thread honestly, no link.",
+      "Substack":"Draft one short Substack post for "+w+" about "+st+". Publish it before you decide it is not ready.",
+      "YouTube":"Record one unpolished video answering the question "+w+" ask most about "+st+". Publish it before you rewatch it.",
+      "Podcast guesting":"List 5 podcasts "+w+" already listen to. Pitch one with a single sentence: the "+st+" angle only you can talk about.",
+      "Webinars":"Pick one 30 minute thing you could teach "+w+" about "+st+". Set a date and tell one group it is happening.",
+      "In-person groups":"Find one local group "+w+" attend and put the next meetup in your calendar. Go to listen for how they describe "+st+", in their words.",
+      "Networking events":"Pick one event "+w+" would attend and register. Prepare one sentence: who you help and the "+st+" you take away.",
+      "Markets":"Find one market where "+w+" shop and book a stall, or visit the next one to watch how they buy.",
+      "Conferences":"Find one conference "+w+" attend this year. Look at the speaker list, pick one person worth knowing, and reach out before it sells out.",
+      "Seminars":"Outline a 20 minute talk that solves one slice of "+st+". Offer it free to one room of "+w+" this month.",
+      "Industry publications":"List 3 publications "+w+" read. Pitch one short piece on "+st+", the angle only you would write.",
+      "Directories":"Find the 2 directories "+w+" actually search. Claim or update your listing today, lead with the "+st+" you solve.",
+      "Established retailers":"List 3 retailers "+w+" already buy from. Draft one short intro on why your thing fits beside theirs.",
+      "Google":"Search the way "+w+" would when stuck on "+st+". Note what comes up, then write the page that should have.",
+      "Traditional media":"Write a 3 line pitch to one journalist who covers "+w+": the "+st+" story, why now, and your take.",
+      "Ads":"Write one ad that says the "+st+" out loud and names "+w+". Set a tiny budget and run it for a week to learn, not to win."
+    };
+    return T[name] || ("Find where "+w+" gather on "+name+" and show up once this week. Say the one thing they need to hear about "+st+", then ask a question.");
+  }
+
+  function ensureMove(name){
+    if(!state.moves[name]) state.moves[name] = { text: moveTemplate(name), when:'', auto:true };
+    else if(state.moves[name].auto) state.moves[name].text = moveTemplate(name);
+    return state.moves[name];
+  }
+
+  function renderMoves(){
+    var wrap = els.movesWrap;
+    if(!state.picked.length){
+      wrap.innerHTML = '<div class="moves-empty" id="movesEmpty">Pick your channels above and your first moves appear here.</div>';
+      renderCardMoves();
+      return;
+    }
+    wrap.innerHTML = '';
+    state.picked.forEach(function(name){
+      var mv = ensureMove(name);
+      var card = document.createElement('div'); card.className='move';
+
+      var top = document.createElement('div'); top.className='mv-top';
+      var ch = document.createElement('span'); ch.className='mv-ch'; ch.textContent=name;
+      var tag = document.createElement('span'); tag.className='mv-tag'; tag.textContent='first move';
+      top.appendChild(ch); top.appendChild(tag); card.appendChild(top);
+
+      var ta = document.createElement('textarea');
+      ta.value = mv.text;
+      ta.addEventListener('input', function(){ mv.text = ta.value; mv.auto=false; renderCardMoves(); save(); });
+      card.appendChild(ta);
+
+      var when = document.createElement('div'); when.className='mv-when';
+      var lbl = document.createElement('span'); lbl.className='lbl'; lbl.textContent='When:'; when.appendChild(lbl);
+      WHEN_OPTS.forEach(function(opt){
+        var b=document.createElement('span');
+        b.className='when-chip'+(mv.when===opt?' on':'');
+        b.textContent=opt;
+        b.addEventListener('click', function(){
+          mv.when = (mv.when===opt? '' : opt);
+          renderMoves(); renderCardMoves(); save();
+        });
+        when.appendChild(b);
+      });
+      card.appendChild(when);
+      wrap.appendChild(card);
+    });
+    renderCardMoves();
+  }
+
+  function renderCardMoves(){
+    var picked = state.picked.filter(function(n){ return state.moves[n] && (state.moves[n].text||'').trim(); });
+    if(!picked.length){ els.card.classList.add('no-moves'); els.cardMv.innerHTML=''; return; }
+    els.card.classList.remove('no-moves');
+    els.cardMv.innerHTML='';
+    picked.forEach(function(name){
+      var mv = state.moves[name];
+      var row=document.createElement('div'); row.className='cmv';
+      var ch=document.createElement('div'); ch.className='cmv-ch'; ch.textContent=name;
+      var doEl=document.createElement('div'); doEl.className='cmv-do';
+      doEl.textContent = mv.text.trim();
+      if(mv.when){ var w=document.createElement('span'); w.className='cmv-when'; w.textContent=' ('+mv.when+')'; doEl.appendChild(w); }
+      row.appendChild(ch); row.appendChild(doEl);
+      els.cardMv.appendChild(row);
+    });
+  }
+
+  /* ---------- persistence ---------- */
+  var saveTimer;
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try{
+        localStorage.setItem(STORE, JSON.stringify({q:state.q,s:state.s,customChannels:state.customChannels,picked:state.picked,moves:state.moves}));
+        els.savedNote.textContent = 'Saved on this device · ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      }catch(e){ els.savedNote.textContent=''; }
+    }, 400);
+  }
+
+  /* ---------- toast ---------- */
+  var toastTimer;
+  function flash(msg){
+    els.toast.textContent = msg; els.toast.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){ els.toast.classList.remove('show'); },2200);
+  }
+
+  /* ---------- copy ---------- */
+  els.copyMsg.addEventListener('click', function(){
+    var txt = messagePlain();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ flash('Core message copied.'); },function(){ legacyCopy(txt); });
+    } else legacyCopy(txt);
+  });
+  function legacyCopy(txt){
+    var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); flash('Core message copied.'); }catch(e){ flash('Copy failed, select it manually.'); }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- PDF (the wall one-pager) ---------- */
+  els.dlPdf.addEventListener('click', buildPDF);
+
+  function buildPDF(){
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF({unit:'pt', format:'a4', orientation:'portrait'});
+    var W = doc.internal.pageSize.getWidth();
+    var H = doc.internal.pageSize.getHeight();
+
+    var C = {
+      ink:[51,48,49], rose:[195,110,110], roseDark:[176,95,95],
+      blush:[226,181,176], cream:[244,242,240], linen:[255,255,255], muted:[107,94,94]
+    };
+
+    doc.setFillColor.apply(doc, C.ink); doc.rect(0,0,W,H,'F');
+
+    doc.setFillColor.apply(doc, C.roseDark); doc.rect(0,0,W,150,'F');
+    doc.setFillColor.apply(doc, C.rose); doc.rect(0,140,W,12,'F');
+
+    var M = 56;
+
+    doc.setTextColor.apply(doc, C.blush);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('SPARK   ·   THE AUDIENCE HUB', M, 60, {charSpace:2});
+
+    doc.setTextColor.apply(doc, C.cream);
+    doc.setFont('times','italic'); doc.setFontSize(34);
+    doc.text('My Audience, Clarified', M, 108);
+
+    var y = 208;
+    doc.setTextColor.apply(doc, C.blush);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('MY CORE MESSAGE', M, y, {charSpace:2});
+
+    y += 26;
+    doc.setTextColor.apply(doc, C.linen);
+    doc.setFont('times','italic'); doc.setFontSize(20);
+    var msg = messagePlain();
+    var msgLines = doc.splitTextToSize(msg, W - M*2);
+    doc.text(msgLines, M, y, {lineHeightFactor:1.4});
+    y += msgLines.length * 28 + 22;
+
+    doc.setDrawColor(244,242,240); doc.setLineWidth(0.6);
+    doc.setGState && doc.setGState(new doc.GState({opacity:0.18}));
+    doc.line(M, y, W-M, y);
+    doc.setGState && doc.setGState(new doc.GState({opacity:1}));
+    y += 34;
+
+    doc.setTextColor.apply(doc, C.blush);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text("WHERE I'M SHOWING UP", M, y, {charSpace:2});
+    y += 30;
+
+    if(state.picked.length){
+      doc.setFont('helvetica','normal'); doc.setFontSize(13);
+      var cx = M;
+      state.picked.forEach(function(p){
+        var tw = doc.getTextWidth(p);
+        var pad = 14, pillW = tw + pad*2, pillH = 26;
+        if(cx + pillW > W - M){ cx = M; y += pillH + 12; }
+        doc.setDrawColor.apply(doc, C.blush);
+        doc.setGState && doc.setGState(new doc.GState({opacity:0.5}));
+        doc.setLineWidth(0.8);
+        doc.roundedRect(cx, y - 18, pillW, pillH, 13, 13, 'S');
+        doc.setGState && doc.setGState(new doc.GState({opacity:1}));
+        doc.setTextColor.apply(doc, C.cream);
+        doc.text(p, cx + pad, y);
+        cx += pillW + 12;
+      });
+      y += 34;
+    } else {
+      doc.setFont('helvetica','italic'); doc.setFontSize(12);
+      doc.setTextColor.apply(doc, C.muted);
+      doc.text('(no channels picked yet)', M, y); y += 28;
+    }
+
+    var moves = state.picked.filter(function(n){ return state.moves[n] && (state.moves[n].text||'').trim(); });
+    if(moves.length){
+      doc.setDrawColor(244,242,240); doc.setLineWidth(0.6);
+      doc.setGState && doc.setGState(new doc.GState({opacity:0.18}));
+      doc.line(M, y, W-M, y);
+      doc.setGState && doc.setGState(new doc.GState({opacity:1}));
+      y += 30;
+
+      doc.setTextColor.apply(doc, C.blush);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9);
+      doc.text('MY FIRST MOVES', M, y, {charSpace:2});
+      y += 22;
+
+      var FOOT = H - 124;
+
+      var bodySize = 11.5, lineH = 15, gap = 15, labGap = 16;
+      function measure(bs, lh, gp, lg){
+        var ty = y, tmp;
+        doc.setFontSize(bs);
+        for(var k=0;k<moves.length;k++){
+          tmp = doc.splitTextToSize(state.moves[moves[k]].text.trim(), W - M*2);
+          ty += lg + tmp.length*lh + gp;
+        }
+        return ty;
+      }
+      if(measure(bodySize,lineH,gap,labGap) > FOOT){ bodySize=10.5; lineH=13.5; gap=11; labGap=14; }
+      if(measure(bodySize,lineH,gap,labGap) > FOOT){ bodySize=10; lineH=12.5; gap=9; labGap=13; }
+
+      moves.forEach(function(name){
+        var mv = state.moves[name];
+        var label = name.toUpperCase() + (mv.when ? '  ·  ' + mv.when.toUpperCase() : '');
+        doc.setTextColor.apply(doc, C.blush);
+        doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+        doc.text(label, M, y, {charSpace:1.5});
+        y += labGap;
+        doc.setTextColor(244,242,240);
+        doc.setFont('helvetica','normal'); doc.setFontSize(bodySize);
+        var lines = doc.splitTextToSize(mv.text.trim(), W - M*2);
+        doc.text(lines, M, y, {lineHeightFactor:1.38});
+        y += lines.length * lineH + gap;
+      });
+      y += 4;
+    }
+
+    doc.setDrawColor(244,242,240);
+    doc.setGState && doc.setGState(new doc.GState({opacity:0.12}));
+    doc.line(M, H-110, W-M, H-110);
+    doc.setGState && doc.setGState(new doc.GState({opacity:1}));
+
+    doc.setTextColor.apply(doc, C.muted);
+    doc.setFont('helvetica','italic'); doc.setFontSize(11);
+    doc.text('Print it. Read it out loud. Stick it on the wall.', M, H-78);
+
+    doc.setTextColor.apply(doc, C.blush);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('SPARKBUSINESS.GLOBAL', M, H-52, {charSpace:1.5});
+
+    doc.save('My-Audience-Clarified.pdf');
+    flash('Your one-pager is downloading.');
+  }
+
+  /* ---------- iframe height broadcast (for Squarespace embed) ---------- */
+  function broadcastHeight(){
+    try{
+      var h = document.body.scrollHeight;
+      if(window.parent && window.parent!==window){
+        window.parent.postMessage({ sparkToolHeight:h, tool:'audience-clarity' }, '*');
+      }
+    }catch(e){}
+  }
+  window.addEventListener('load', broadcastHeight);
+  window.addEventListener('resize', broadcastHeight);
+  if(window.ResizeObserver){ new ResizeObserver(broadcastHeight).observe(document.body); }
+  setInterval(broadcastHeight, 1200);
+
+  /* ---------- init ---------- */
+  renderChips();
+  renderMessage();
+  renderMoves();
+  if(state.q.some(function(x){return x;}) || state.s.some(function(x){return x;}) || state.picked.length){
+    els.savedNote.textContent = 'Picked up where you left off.';
+  }
+})();
+</script>
+</body>
+</html>
